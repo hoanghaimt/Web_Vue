@@ -1,0 +1,175 @@
+<template>
+  <div class="wrapper">
+    <div class="animated fadeIn">
+      <div v-if="loading">
+        <div class="loader"></div>
+      </div>
+      <div class="row">
+        <div class="col-12">
+              <b-button type="button" variant="primary"> <router-link tag="b" to="/product/add">Thêm sản phẩm</a></router-link> </b-button>
+              <hr>
+          </div>
+        <div class="col-12">
+          <b-card header="<i class='fa fa-align-justify'></i> Danh sách sản phẩm">
+            <table class="table table-bordered table-striped table-sm table-responsive">
+              <thead>
+                <tr>
+                  <th class="text-center">id</th>
+                  <th class="text-center">Hình ảnh</th>
+                  <th class="text-center">Tên SP</th>
+                  <th class="text-center">Loại</th>
+                  <th class="text-center">Giá bán</th>
+                  <th class="text-center">Giá sale</th>
+                  <th class="text-center">Đơn vị</th>
+                  <th class="text-center">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="product in products">
+                  <td class="text-center">{{product.id}}</td>
+                  <td class="text-center">
+                    <img :src="product.pro_image" class="img-responsive" alt="no images" width="50" height="50">
+                  </td>
+                  <td class="text-center">{{product.pro_name}}</td>
+                  <td class="text-center">{{product.list_name}}</td>
+                  <td class="text-center">{{product.pro_price}}</td>
+                  <td class="text-center">{{product.pro_sale}}</td>
+                  <td class="text-center">{{product.pro_unit}}</td>
+                  <td class="text-center">                     
+                      <router-link variant="primary" :to="{ name: 'UpdatePro', params: { pro_id: product.id }}"><b-button type="button" variant="primary">Sửa</b-button></router-link>                    
+                    <b-button variant="danger" @click="remove(product.id)">Xóa</b-button>
+                  </td>
+                </tr>                
+              </tbody>
+            </table>
+            <nav>
+              <ul class="pagination">
+                <span>Hiển thị {{pagination.current_page}}  trong tổng {{pagination.last_page}}</span> <hr>
+                <li class="page-item">
+                  <button class="page-link" v-on:click="FetchPaginateData(pagination.prev_page)" :disabled="!pagination.prev_page">Trang sau</button>
+                </li>
+                <div v-for="item in pagination.last_page">
+                  <div v-if="item == pagination.current_page">
+                    <li class="page-item active">
+                      <a class="page-link">{{item}}</a>
+                    </li>
+                  </div> 
+                  <div v-else>
+                    <li class="page-item">
+                      <button class="page-link" v-on:click="FetchPaginateData(pagination.path_page+'?page='+item)">{{item}}</button>
+                    </li>
+                  </div>                 
+                </div>                                
+                <li class="page-item">
+                  <button class="page-link" v-on:click="FetchPaginateData(pagination.next_page)" :disabled="!pagination.next_page">
+                    trang tiếp
+                  </button>
+                </li>
+              </ul>
+            </nav>
+          </b-card>
+        </div><!--/.col-->
+      </div><!--/.row-->
+    </div>
+  </div>
+</template>
+
+<script>
+  export default {
+    name: 'tables',
+    name: 'modals',
+    data () {
+      return {
+        url:'/api/products',
+        loading: false,
+        pro_name:'',
+        pro_image:'',
+        pro_price:'',
+        pro_sale:'',
+        pro_unit:'',
+        list_name:'',
+        pagination:[],
+        products:[],
+        product:{
+          id:0,
+          pro_name:'',
+          pro_image:'',
+          pro_price:'',
+          pro_sale:'',
+          pro_unit:'',
+          pro_unit:''
+        },
+        errors:{
+
+        },
+        edit_item: {
+
+        }     
+      }
+    },
+    mounted(){
+      this.getallproduct()
+    },
+    methods:{    
+      getallproduct(){
+        this.errors = [];
+        this.loading = true;
+        let $this = this;
+        axios.get(this.url).then(response=> {
+          this.products = response.data.data;
+          $this.makepagenation(response.data);
+          this.loading = false;
+        })
+      },
+      updatemod_btn(id){
+        this.loading = true;
+        var url = '/api/products/'+id;
+        axios.get(url).then(response => {
+            this.edit_item = response.data;
+            this.oimage = response.data.mod_icon;
+            this.eimage = '';
+            $("#id_name").val(response.data.mod_name);
+            $("#id_number").val(response.data.mod_number);
+            $("#id_type").val(response.data.mod_type);        
+            $("#id_description").val(response.data.mod_description);        
+            this.edit_item.mod_description = response.data.mod_description;
+            this.loading = false;
+            this.updatemod = true;
+          });
+      },
+
+      remove(id){
+        const options = {title: 'Xác nhận?', cancelLabel: 'Không', size: 'sm'}
+        this.$dialogs.confirm('Bạn có chắc xóa sản phẩm này !', options)
+        .then(res => {
+        if (res.ok) {
+          this.loading = true;
+          var url = '/api/products/remove/'+id;
+          axios.post(url, { }).then(response => {
+              this.getallproduct();
+          });
+          }
+        })   
+      },
+      makepagenation (data){
+        let pagination = {
+          current_page : data.current_page,
+          last_page : data.last_page,
+          next_page : data.next_page_url,
+          prev_page : data.prev_page_url,
+          path_page : data.path,
+        }
+        this.pagination = pagination;
+      },
+      FetchPaginateData(url){
+        this.loading = true;
+        this.url = url;
+        this.getallproduct();
+        this.loading = false;
+      },
+      slect_file(){
+        $('#file_id').click();
+      }
+    }  
+  };
+</script>
